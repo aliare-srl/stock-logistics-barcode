@@ -34,14 +34,19 @@ class BarcodeGenerateMixin(models.AbstractModel):
 
         Automatic generation is skipped when the caller already supplies a
         barcode value, so manually entered codes are never overwritten.
+        An explicit False means the user intentionally left the field empty;
+        generation only fires when the key is absent entirely.
         """
         if isinstance(vals.get("barcode"), str) and not vals["barcode"].strip():
             vals["barcode"] = False
         barcode_rule = self.env["barcode.rule"].get_automatic_rule(self._name)
-        if barcode_rule.exists() and ("barcode" not in vals or not vals.get("barcode")):
+        # Only auto-generate when no barcode key was provided at all.
+        # vals['barcode'] = False means the caller explicitly cleared it.
+        should_generate = barcode_rule.exists() and "barcode" not in vals
+        if should_generate:
             vals.update({"barcode_rule_id": barcode_rule.id})
         record = super().create(vals)
-        if barcode_rule and ("barcode" not in vals or not vals.get("barcode")):
+        if should_generate:
             record.generate_base()
             record.generate_barcode()
         return record

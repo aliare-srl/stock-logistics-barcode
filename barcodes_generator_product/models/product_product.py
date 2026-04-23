@@ -18,8 +18,12 @@ class ProductProduct(models.Model):
 
     @api.model
     def create(self, vals):
-        if isinstance(vals.get("barcode"), str) and not vals["barcode"].strip():
-            vals["barcode"] = False
+        if "barcode" in vals:
+            barcode_val = vals["barcode"]
+            if barcode_val is None or (
+                isinstance(barcode_val, str) and not barcode_val.strip()
+            ):
+                vals["barcode"] = False
         return super().create(vals)
 
     def write(self, vals):
