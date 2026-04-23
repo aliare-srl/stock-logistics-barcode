@@ -30,12 +30,16 @@ class BarcodeGenerateMixin(models.AbstractModel):
 
     @api.model
     def create(self, vals):
-        """It creates a new barcode if automation is active."""
+        """It creates a new barcode if automation is active.
+
+        Automatic generation is skipped when the caller already supplies a
+        barcode value, so manually entered codes are never overwritten.
+        """
         barcode_rule = self.env["barcode.rule"].get_automatic_rule(self._name)
-        if barcode_rule.exists():
+        if barcode_rule.exists() and not vals.get("barcode"):
             vals.update({"barcode_rule_id": barcode_rule.id})
         record = super().create(vals)
-        if barcode_rule:
+        if barcode_rule and not vals.get("barcode"):
             record.generate_base()
             record.generate_barcode()
         return record
